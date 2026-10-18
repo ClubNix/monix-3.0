@@ -41,21 +41,21 @@
                 <td>
                     <form method="POST" action="{{ url_for('admin_update_user', username=u.username) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <select name="fridge_blocked" class="form-select form-select-sm" style="width:140px; display:inline-block;">
-                            <option value="0" {% if not u.fridge_blocked %}selected{% endif %}>Autorisée</option>
-                            <option value="1" {% if u.fridge_blocked %}selected{% endif %}>Bloquée</option>
-                        </select>
-                        <button class="btn btn-sm btn-primary" type="submit" name="action" value="update_fridge_blocked">Modifier</button>
-                    </form>
-                </td>
-                <td>
-                    <form method="POST" action="{{ url_for('admin_update_user', username=u.username) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <select name="is_admin" class="form-select form-select-sm" style="width:120px; display:inline-block;">
                             <option value="0" {% if not u.is_admin %}selected{% endif %}>Utilisateur</option>
                             <option value="1" {% if u.is_admin %}selected{% endif %}>Admin</option>
                         </select>
                         <button class="btn btn-sm btn-primary" type="submit" name="action" value="update_admin">Modifier</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin_update_user', username=u.username) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="fridge_blocked" class="form-select form-select-sm" style="width:140px; display:inline-block;">
+                            <option value="0" {% if not u.fridge_blocked %}selected{% endif %}>Autorisée</option>
+                            <option value="1" {% if u.fridge_blocked %}selected{% endif %}>Bloquée</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" type="submit" name="action" value="update_fridge_blocked">Modifier</button>
                     </form>
                 </td>
                 <td>
