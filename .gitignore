@@ -1,0 +1,50 @@
+# Données MONIX : jamais versionner les données de test ou de production.
+/users.enc
+/key.key
+/products.json
+/.flask-secret
+/.monix-data.lock
+/.monix-pending-transaction.json
+/static/uploads/
+/logs/
+/secrets/
+
+# Configuration et identifiants locaux.
+/.env
+/.env.*
+!/.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Python.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Éditeurs et système.
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Archives, sauvegardes et fichiers temporaires.
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.bak
+*.tmp
+*.part

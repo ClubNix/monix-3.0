@@ -1,0 +1,19 @@
+services:
+  mendix_prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mendix_prod
+    ports:
+      - "5480:8080"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Paris
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1024M
+          pids: 350

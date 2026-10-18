@@ -1,0 +1,29 @@
+services:
+  monix_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monix_dev
+    ports:
+      - "127.0.0.1:5481:8080"
+    volumes:
+      - .:/app
+      - monix_dev_data:/data
+    environment:
+      MONIX_DATA_DIR: /data
+      TZ: Europe/Paris
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/login', timeout=3)"
+      interval: 5s
+      timeout: 4s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  monix_dev_data:
+    name: monix_dev_data
