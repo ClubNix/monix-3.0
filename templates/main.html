@@ -10,8 +10,12 @@
     const csrfToken = "{{ csrf_token() }}";
     function openFBI() {
         fetch('/fbiOpenUp', {method: 'POST', headers: {'X-CSRF-Token': csrfToken}})
-            .then(response => response.text())
-            .then(data => console.log(data))
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || "Ouverture impossible.");
+                return data;
+            })
+            .then(() => console.log('Demande d’ouverture envoyée'))
             .catch(error => console.error('Erreur:', error));
     }
   </script>
@@ -55,8 +59,8 @@
 
     <!-- Boutons spéciaux -->
     <div class="mb-4">
-        <button class="btn btn-info me-2" onclick="openFBI();">
-            Ouvrir le frigo
+        <button class="btn btn-info me-2" onclick="openFBI();" {% if user.fridge_blocked %}disabled title="Ouverture manuelle bloquée par un administrateur"{% endif %}>
+            {% if user.fridge_blocked %}Ouverture du frigo bloquée{% else %}Ouvrir le frigo{% endif %}
         </button>
 
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#donModal">

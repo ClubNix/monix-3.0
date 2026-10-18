@@ -13,14 +13,14 @@ from app import repo
 
 
 DEV_USERS = (
-    ("user", "user", False, 100),
-    ("admin", "admin", True, 100),
+    ("user", "user", False, 100, False),
+    ("admin", "admin", True, 100, False),
 )
 
 
 def main():
     with repo.locked_state():
-        for username, password, is_admin, initial_balance in DEV_USERS:
+        for username, password, is_admin, initial_balance, fridge_blocked in DEV_USERS:
             account = repo.find_user(username)
             if account is None:
                 repo.add_user(
@@ -28,12 +28,14 @@ def main():
                     password,
                     is_admin=is_admin,
                     initial_balance=initial_balance,
+                    fridge_blocked=fridge_blocked,
                 )
                 continue
 
             account.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
             account.is_admin = is_admin
             account.tuxcoin = initial_balance
+            account.fridge_blocked = fridge_blocked
             repo.update_user(account)
 
     print("Comptes de développement prêts : user/user et admin/admin")

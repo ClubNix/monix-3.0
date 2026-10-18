@@ -23,6 +23,7 @@
                 <th>Pseudo</th>
                 <th>Solde ({{ currency }})</th>
                 <th>Admin</th>
+                <th>Ouverture manuelle</th>
                 <th>Modifier / Actions</th>
             </tr>
         </thead>
@@ -35,6 +36,16 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="number" name="tuxcoin" value="{{ u.tuxcoin }}" class="form-control form-control-sm" min="0" step="any" style="width:100px;">
                         <button class="btn btn-sm btn-primary" type="submit" name="action" value="update_balance">Modifier</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin_update_user', username=u.username) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="fridge_blocked" class="form-select form-select-sm" style="width:140px; display:inline-block;">
+                            <option value="0" {% if not u.fridge_blocked %}selected{% endif %}>Autorisée</option>
+                            <option value="1" {% if u.fridge_blocked %}selected{% endif %}>Bloquée</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary" type="submit" name="action" value="update_fridge_blocked">Modifier</button>
                     </form>
                 </td>
                 <td>
@@ -67,10 +78,10 @@
     <h5>Ajouter un utilisateur</h5>
     <form method="POST" action="{{ url_for('admin_add_user') }}" class="row g-3 mb-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <input type="text" name="username" class="form-control" placeholder="Pseudo" required>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <input type="password" name="password" class="form-control" placeholder="Mot de passe" required>
         </div>
         <div class="col-md-2">
@@ -80,6 +91,12 @@
             <select name="is_admin" class="form-select">
                 <option value="0">Utilisateur</option>
                 <option value="1">Admin</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="fridge_blocked" class="form-select">
+                <option value="0">Frigo autorisé</option>
+                <option value="1">Frigo bloqué</option>
             </select>
         </div>
         <div class="col-md-2">

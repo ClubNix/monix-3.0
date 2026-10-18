@@ -234,6 +234,8 @@ class User:
     password_hash: bytes
     tuxcoin: float
     is_admin: bool
+    # True bloque uniquement l'ouverture manuelle depuis le bouton principal.
+    fridge_blocked: bool = False
 
 @dataclass
 class Product:
@@ -337,7 +339,8 @@ class Repo:
         products = json.dumps([asdict(p) for p in self.products], ensure_ascii=False, indent=2)
         raw_users = [
             {"username": u.username, "password_hash_hex": u.password_hash.hex(),
-             "tuxcoin": u.tuxcoin, "is_admin": u.is_admin}
+             "tuxcoin": u.tuxcoin, "is_admin": u.is_admin,
+             "fridge_blocked": u.fridge_blocked}
             for u in self.users
         ]
         token = Fernet(self.key).encrypt(json.dumps(raw_users, ensure_ascii=False, indent=2).encode())
@@ -381,7 +384,8 @@ class Repo:
         os.chmod(KEY_FILE, 0o600)
         return key
 
-    def add_user(self, username: str, password: str, is_admin: bool=False, initial_balance: float=0) -> bool:
+    def add_user(self, username: str, password: str, is_admin: bool=False,
+                 initial_balance: float=0, fridge_blocked: bool=False) -> bool:
         """Ajoute un utilisateur et chiffre immédiatement la nouvelle liste."""
         self.obligatory_check("add_user")
         if self.find_user(username):
@@ -393,6 +397,7 @@ class Repo:
                 password_hash=pwd_hash,
                 tuxcoin=round_tuxcoin(initial_balance),
                 is_admin=is_admin,
+                fridge_blocked=fridge_blocked,
             )
         )
         self.save_users()
@@ -426,6 +431,7 @@ class Repo:
                 bytes.fromhex(u["password_hash_hex"]),
                 round_tuxcoin(float(u["tuxcoin"])),
                 bool(u["is_admin"]),
+                u.get("fridge_blocked", False) is True,
             )
             for u in raw
         ]
@@ -442,6 +448,7 @@ class Repo:
                 "password_hash_hex": u.password_hash.hex(),
                 "tuxcoin": u.tuxcoin,
                 "is_admin": u.is_admin,
+                "fridge_blocked": u.fridge_blocked,
             }
             for u in users
         ]
@@ -678,12 +685,18 @@ def logout():
 @app.route("/fbiOpenUp", methods=["POST"])
 @login_required
 def fbiOpenUp():
-    """Permet à tout membre connecté de demander l'ouverture manuelle du frigo."""
+    """Ouvre manuellement le frigo sauf si ce droit est bloqué pour le compte."""
     username = session["username"]
+    repo.refresh()
+    user = repo.find_user(username)
+    if not user:
+        return jsonify({"ok": False, "error": "Utilisateur introuvable."}), 404
+    if user.fridge_blocked:
+        log_action(username, "OUVERTURE_DU_FRIGO_REFUSEE", "Ouverture manuelle bloquée")
+        return jsonify({"ok": False, "error": "L’ouverture manuelle du frigo est bloquée pour votre compte."}), 403
     log_action(username, "OUVERTURE_DU_FRIGO_FBI_OPEN_UP", "Ouverture manuelle du frigo")
     Thread(target=openFridge, args=(username, "manual")).start()
-    flash("FBI OPEN UP", "info")
-    return redirect(url_for("main"))
+    return jsonify({"ok": True})
 
 # ------------------- Admin Users -------------------
 @app.route("/admin/data", methods=["GET"])
@@ -758,6 +771,7 @@ def admin_add_user():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password")
     is_admin = request.form.get("is_admin") == "1"
+    fridge_blocked = request.form.get("fridge_blocked") == "1"
     try:
         initial_balance = float(request.form.get("initial_balance") or 0)
         if not username or not password or not math.isfinite(initial_balance) or initial_balance < 0:
@@ -769,8 +783,9 @@ def admin_add_user():
         if repo.find_user(username):
             flash("Ce pseudo existe déjà.", "danger")
             return redirect(url_for("admin_users"))
-        repo.add_user(username, password, is_admin=is_admin, initial_balance=initial_balance)
-    log_action(session["username"], "ADMIN_AJOUT_USER", f"Ajout de {username}, admin={is_admin}, balance={initial_balance}")
+        repo.add_user(username, password, is_admin=is_admin, initial_balance=initial_balance,
+                      fridge_blocked=fridge_blocked)
+    log_action(session["username"], "ADMIN_AJOUT_USER", f"Ajout de {username}, admin={is_admin}, blocage_frigo={fridge_blocked}, balance={initial_balance}")
     flash(f"Utilisateur {username} ajouté.", "success")
     return redirect(url_for("admin_users"))
 
@@ -812,6 +827,16 @@ def admin_update_user(username):
             repo.update_user(u)
             log_action(session["username"], "ADMIN_UPDATE_ROLE", f"Utilisateur={u.username}, Admin={u.is_admin}")
             flash(f"Rôle admin de {u.username} mis à jour.", "success")
+
+        elif action == "update_fridge_blocked":
+            u.fridge_blocked = request.form.get("fridge_blocked") == "1"
+            repo.update_user(u)
+            log_action(
+                session["username"], "ADMIN_UPDATE_FRIDGE_ACCESS",
+                f"Utilisateur={u.username}, Blocage={u.fridge_blocked}",
+            )
+            status = "bloquée" if u.fridge_blocked else "autorisée"
+            flash(f"Ouverture manuelle {status} pour {u.username}.", "success")
 
         elif action == "delete_user":
             if u.username == session.get("username"):
