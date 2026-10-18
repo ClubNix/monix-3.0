@@ -425,7 +425,11 @@ class Repo:
         fernet = Fernet(self.key)
         data = fernet.decrypt(token).decode()
         raw = json.loads(data)
-        return [
+        # Les fichiers créés avant l'ajout du contrôle d'ouverture n'ont pas
+        # encore ce champ. Ils restent autorisés, puis sont immédiatement
+        # rechiffrés dans le nouveau format sans toucher aux autres valeurs.
+        needs_migration = any("fridge_blocked" not in item for item in raw)
+        users = [
             User(
                 u["username"],
                 bytes.fromhex(u["password_hash_hex"]),
@@ -435,6 +439,12 @@ class Repo:
             )
             for u in raw
         ]
+        if needs_migration:
+            self.save_users(users)
+            logger.info(
+                "Migration users.enc : fridge_blocked=false ajouté aux anciens comptes"
+            )
+        return users
 
     def save_users(self, users: Optional[List[User]] = None):
         """Transforme les utilisateurs en JSON puis chiffre ce JSON dans users.enc."""
